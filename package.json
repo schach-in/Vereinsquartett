@@ -1,13 +1,15 @@
 {
-  "name": "bahnhofquartett",
+  "name": "schachquartett",
   "version": "0.1.0",
-  "description": "",
+  "description": "Automatically generate card game with chess clubs in Germany",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "node bin/index.js"
+    "test": "npm run standard",
+    "standard": "standard",
+    "build": "node bin/index.js",
+    "build-data": "node bin/index.js"
   },
-  "author": "Philipp Bock <p@philippbock.de> (http://philippbock.de/)",
+  "author": "Falco Nogatz <fnogatz@gmail.com>",
   "license": "MIT",
   "dependencies": {
     "async": "^1.5.0",
@@ -18,5 +20,8 @@
     "pdfkit": "^0.7.1",
     "request": "^2.67.0",
     "slug": "^0.9.1"
+  },
+  "devDependencies": {
+    "standard": "^9.0.1"
   }
 }
