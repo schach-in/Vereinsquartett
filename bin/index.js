@@ -1,17 +1,19 @@
 'use strict'
 
 const async = require('async')
-const pr = require('path').resolve
+const path = require('path')
 const fs = require('fs')
-const _ = require('lodash')
+const csv = require('csv-parse')
+const concat = require('concat-stream')
 
 const pdf = require('./lib/card-generator')()
 
-const SRC_DIR = pr(__dirname, '../src')
-const DATA_DIR = pr(SRC_DIR, 'data')
-const DEST_DIR = pr(__dirname, '../dist')
+const SRC_DIR = path.resolve(__dirname, '../src')
+const DATA_DIR = path.resolve(SRC_DIR, 'data')
+const DEST_DIR = path.resolve(__dirname, '../dist')
 
 const ALPHABET = 'ABCDEFGHIJKMNOPQRSTUVWXYZ'
+const ID_PARTS = 6
 
 try {
   fs.mkdirSync(DEST_DIR)
@@ -19,108 +21,86 @@ try {
   if (e.code !== 'EEXIST') throw e
 }
 
-let stations = JSON.parse(fs.readFileSync(pr(DATA_DIR, 'stations.json')))
-let categories = [
-  {
-    name: 'Anzahl der Bahnsteige',
-    find: station => station.platforms.length,
-    reverse: true
-  },
-  {
-    name: 'Längster Bahnsteig',
-    find: station => _(station.platforms).map('length').max(),
-    format: n => n.toFixed(2).replace('.', ',') + ' m',
-    reverse: true
-  },
-  {
-    name: 'Höchster Bahnsteig',
-    find: station => _(station.platforms).map('height').max(),
-    format: n => n.toFixed(2).replace('.', ',') + ' m',
-    reverse: true
-  },
-  {
-    name: 'Bahnhofskategorie',
-    find: n => n.category
-  },
-  {
-    name: 'Anzahl der Aufzüge',
-    find: n => n.elevators.length,
-    reverse: true
-  },
-  {
-    name: 'Ältester Aufzug',
-    find: n => _(n.elevators).map(e => +e.year).filter().min(),
-    filter: n => n.elevators.length,
-    format: n => n === Infinity ? '—' : n
-  },
-  {
-    name: 'Größte Aufzugskabine',
-    find: n => _(n.elevators).map(e => e.cabin.width * e.cabin.depth * e.cabin.height / 1e9).filter(n => n < 100).max(),
-    reverse: true,
-    format: n => (n > 0) ? n.toFixed(1).replace('.', ',') + ' m³' : '—'
-  },
-  {
-    name: 'Anschluss an eine Fähre',
-    find: n => n.ferryNearby,
-    reverse: true,
-    format: n => n ? 'ja' : 'nein'
-  }
-  /* {
-    name: 'Höchster Aufzugschacht',
-    find: n => _(n.elevators).map(e => e.wellHeight).filter().max(),
-    format: n => (n > 0) ? n.toFixed(2).replace('.', ',') + ' m' : '—',
-    reverse: true,
-  },
-  {
-    name: 'Höchster Aufzugschacht',
-    find: n => _(n.elevators).map(e => +e.wellHeight).filter().max(),
-    reverse: true,
-    format: n => n === -Infinity ? '—' : n.toFixed(2).replace('.', ',') + ' m',
-  }, */
-]
-
-let cards = new Set()
-
-let potentialCards = categories.map(category => {
-  let filter = category.filter || (() => true)
-  let results = _(stations).filter(filter).sortBy(category.find)
-  if (category.reverse) results = results.reverse()
-  return results.value()
-})
-
-while (cards.size < potentialCards.length * 4) {
-  let group = cards.size % potentialCards.length
-  let card = potentialCards[group].shift()
-  cards.add(card)
+function loadCSV (filename, callback) {
+  var stream = fs.createReadStream(filename)
+  stream.on('error', function (error) {
+    callback(error)
+  })
+  stream.pipe(csv({
+    columns: true
+  }))
+    .pipe(concat(callback.bind(null, null)))
 }
 
-let jannowitz = _.findWhere(stations, { name: 'Jannowitzbrücke' })
-cards.add(jannowitz)
-cards.delete(_.findWhere(stations, { name: 'Anwanden' }))
-
-cards = _(Array.from(cards)).sortBy(s => s.state).value()
-
-let i = 0
-async.eachLimit(cards, 1, (station, cardDone) => {
-  let cardID = ALPHABET[i / 4 | 0] + (i % 4 + 1)
-  console.log(cardID, station.name)
-  let card = {
-    name: station.name,
-    id: cardID,
-    values: []
+let categories = [
+  {
+    name: 'Gründungsjahr',
+    find: verein => parseInt(verein.gruendung.slice(0, 4)) || '—',
+    reverse: true
+  },
+  {
+    name: 'Mitglieder',
+    find: verein => verein.mitglieder,
+    reverse: true
+  },
+  {
+    name: 'Anteil weiblicher Mitglieder',
+    find: verein => Math.round(verein.weibliche_mitglieder / verein.mitglieder * 100) + ' %'
+  },
+  {
+    name: 'Anteil Jugendliche',
+    find: verein => Math.round(verein.jugendliche / verein.mitglieder * 100) + ' %'
+  },
+  {
+    name: 'Durchschnitts-DWZ',
+    find: verein => verein.durchschnitts_dwz
+  },
+  {
+    name: 'DVM-Teilnahmen',
+    notice: 'seit 2003',
+    find: verein => verein.dvm_teilnahmen
   }
-  categories.forEach(category => {
-    let format = category.format || _.identity
-    card.values.push({ name: category.name, value: format(category.find(station)) })
-  })
+]
 
-  pdf.add(card).then(cardDone)
-  .catch((err) => {
-    console.error(err)
-    cardDone(err)
+const filename = path.resolve(DATA_DIR, 'vereine.csv')
+loadCSV(filename, function (err, vereine) {
+  if (err) {
+    throw err
+  }
+
+  let i = 0
+  async.eachLimit(vereine, 1, (verein, cardDone) => {
+    let cardId = ALPHABET[i / ID_PARTS | 0] + (i % ID_PARTS + 1)
+
+    let website = verein.website
+      .replace(/^https?:\/\//, '')
+      .replace(/\/$/, '')
+
+    let name = verein.name
+      .replace(/ e\. ?V\.?/, '')
+      .replace(/ eV.?/, '')
+      .replace('  ', ' ')
+
+    let card = {
+      name: name,
+      id: cardId,
+      zps: verein.zps,
+      verband: '(tbd)',
+      website: website,
+      values: categories.map(category => ({
+        name: category.name,
+        value: category.find(verein)
+      }))
+    }
+
+    pdf.add(card).then(cardDone)
+    .catch((err) => {
+      console.error(err)
+      cardDone(err)
+    })
+    i++
+  }, function () {
+    pdf.end()
+    pdf.doc.pipe(fs.createWriteStream(path.resolve(DEST_DIR, 'output.pdf')))
   })
-  i++
-}, function () {
-  pdf.end()
-  pdf.doc.pipe(fs.createWriteStream(pr(DEST_DIR, 'output.pdf')))
 })

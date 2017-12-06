@@ -2,10 +2,11 @@
 
 const PDFDocument = require('pdfkit')
 const cheerio = require('cheerio')
-const pr = require('path').resolve
+const path = require('path')
 const fs = require('fs')
 
-const findImage = require('./find-image')
+const IMG_DIR = path.resolve(__dirname, '../../src/data/images')
+// const MAP_ATTRIBUTION = 'Map data © OpenStreetMap contributors, CC-BY-SA, Imagery © Mapbox'
 
 const BLEED = 3
 const WIDTH = 170 + 2 * BLEED
@@ -18,7 +19,7 @@ const LICHTGRAU = [ 0, 0, 0, 20 ]
 const WHITE = [ 0, 0, 0, 0 ]
 const BLACK = [ 0, 0, 0, 100 ]
 
-let $ = cheerio.load(fs.readFileSync(pr(__dirname, '../../src/backside.svg')))
+let $ = cheerio.load(fs.readFileSync(path.resolve(__dirname, '../../src/backside.svg')))
 function drawBacks (doc) {
   for (let i = 0; i < 9; i++) {
     let pageX = 595 - (1 + (i / 3 | 0) % 3) * (WIDTH + MARGIN)
@@ -45,7 +46,7 @@ function drawBack (doc, pageX, pageY) {
       .lineTo($line.attr('x2'), $line.attr('y2'))
       .strokeOpacity(0.5).lineWidth(0.5).stroke(WHITE)
   })
-  doc.fontSize(8).fill(WHITE).text('v0.4', MARGIN, MARGIN)
+  doc.fontSize(8).fill(WHITE).text('v0.1 - 06.12.2017', MARGIN + 4, MARGIN + 6.5)
   doc.restore()
 }
 
@@ -65,100 +66,99 @@ function makePDF (card) {
       let pageX = MARGIN + ((i / 3 | 0) % 3) * (WIDTH + MARGIN)
       let pageY = MARGIN + (i % 3) * (HEIGHT + MARGIN)
 
-      findImage(card).then(image => {
-        let y = 0
-        doc.rect(pageX + 0, pageY + 0, WIDTH, HEIGHT / 2.5)
-        y = HEIGHT / 2.2
+      let y = 0
+      doc.rect(pageX + 0, pageY + 0, WIDTH, HEIGHT / 2.5)
+      y = HEIGHT / 2.2
 
-        // Declare fonts
-        doc.font(pr(__dirname, '../../src/fonts/FiraSans-Light.ttf'), 'Light')
-        doc.font(pr(__dirname, '../../src/fonts/FiraSans-Book.ttf'), 'Regular')
+      // Declare fonts
+      doc.font(path.resolve(__dirname, '../../src/fonts/FiraSans-Light.ttf'), 'Light')
+      doc.font(path.resolve(__dirname, '../../src/fonts/FiraSans-Book.ttf'), 'Regular')
 
-        let placeholderAspectRatio = WIDTH / (HEIGHT / 2.5)
+      let filename = path.resolve(IMG_DIR, card.zps + '.png')
+      if (fs.existsSync(filename)) {
+        doc.save()
+          .clip()
+          .image(filename, pageX - 130, pageY + 0, { height: HEIGHT / 2.5 })
+          .restore()
 
-        if (image) {
-          // Find out which dimension we need to pass to PDFKit to make sure
-          // that the image covers its placeholder.
-          let imageSize
-          let imageAspectRatio = image.dimensions.width / image.dimensions.height
-          if (imageAspectRatio > placeholderAspectRatio) {
-            imageSize = { height: HEIGHT / 2.5 }
-          } else {
-            imageSize = { width: WIDTH }
-          }
-          doc.save()
-            .clip()
-            .image(image.image, pageX + 0, pageY + 0, imageSize)
-            .restore()
+        // Attribution
+        /*
+        doc.rect(pageX, pageY + HEIGHT / 2.5 - 8, WIDTH, 8)
+          .fill(LICHTGRAU)
+        doc.fontSize(4)
+          .fill(BLACK)
+          .text(
+            MAP_ATTRIBUTION,
+            pageX + MARGIN / 2 + 2,
+            pageY + HEIGHT / 2.5 - 8)
+        */
+      } else {
+        doc.fill(LICHTGRAU)
+      }
 
-          // Attribution
-          doc.fontSize(5)
-            .fill(WHITE)
-            .text(
-              image.metadata.Author || image.metadata.url,
-              pageX + MARGIN / 2 + 2,
-              pageY + HEIGHT / 2.5 - 8)
-        } else {
-          doc.fill(LICHTGRAU)
-        }
+      doc.moveTo(pageX + 0, pageY + HEIGHT / 2.5)
+        .lineTo(pageX + WIDTH, pageY + HEIGHT / 2.5)
+        .lineWidth(3)
+        .strokeOpacity(1)
+        .stroke(VERKEHRSROT)
 
-        doc.moveTo(pageX + 0, pageY + HEIGHT / 2.5 + 4)
-          .lineTo(pageX + WIDTH, pageY + HEIGHT / 2.5 + 4)
-          .lineWidth(3)
-          .strokeOpacity(1)
-          .stroke(VERKEHRSROT)
+      doc.fill(BLACK)
+      doc.circle(pageX + WIDTH - MARGIN - 5, pageY + MARGIN + 7, 10).fill(BLACK)
+      // doc.rect(pageX + WIDTH - MARGIN - 22, pageY + MARGIN, 32, 15).fill(BLACK)
+      doc.fontSize(12)
+      doc.font('Light').fill(WHITE).text(card.id, pageX - 2 * (MARGIN + BLEED) + WIDTH - 23, pageY + MARGIN, { width: 80, align: 'center' })
+      y += -4
 
-        doc.fill(BLACK)
-        doc.circle(pageX + WIDTH - MARGIN - 5, pageY + MARGIN + 7, 10).fill(BLACK)
-        doc.fontSize(12)
-        doc.font('Light').fill(WHITE).text(card.id, pageX - 2 * (MARGIN + BLEED) + WIDTH - 23, pageY + MARGIN, { width: 80, align: 'center' })
+      doc.fontSize(9)
+      doc.font('Regular').fill(BLACK).text(card.name, pageX + MARGIN, pageY + y)
+      y += LINE_HEIGHT * 1.5
 
-        doc.fontSize(9)
-        doc.font('Regular').fill(BLACK).text(card.name, pageX + MARGIN, pageY + y)
-        y += LINE_HEIGHT * 1.5
+      doc.fontSize(8)
+      card.values.forEach(category => {
+        doc.font('Light').text(category.name, pageX + MARGIN, pageY + y)
+        doc.font('Regular').text(category.value, pageX + MARGIN, pageY + y, { width: WIDTH - 2 * MARGIN, align: 'right' })
+        y += LINE_HEIGHT
+      })
 
-        doc.fontSize(8)
-        card.values.forEach(category => {
-          doc.font('Light').text(category.name, pageX + MARGIN, pageY + y)
-          doc.font('Regular').text(category.value, pageX + MARGIN, pageY + y, { width: WIDTH - 2 * MARGIN, align: 'right' })
-          y += LINE_HEIGHT
-        })
+      doc.fontSize(6)
+        .font('Light')
+        .fill(BLACK)
+        .text(card.website, pageX + MARGIN, pageY + 240, { width: WIDTH - 2 * MARGIN, align: 'right' })
 
-        doc.fontSize(8)
+      doc.fontSize(8)
 
-        doc.lineWidth(0.5)
+      doc.lineWidth(0.5)
 
-        // Draw cutting marks
-        doc.moveTo(pageX + BLEED, pageY - 6)
-          .lineTo(pageX + BLEED, pageY + BLEED)
-          .lineTo(pageX - 6, pageY + BLEED)
-          .stroke(BLACK)
-        doc.moveTo(pageX - BLEED + WIDTH, pageY - 6)
-          .lineTo(pageX - BLEED + WIDTH, pageY + BLEED)
-          .lineTo(pageX + WIDTH + 6, pageY + BLEED)
-          .stroke()
-        doc.moveTo(pageX - BLEED + WIDTH, pageY + BLEED + HEIGHT + 6)
-          .lineTo(pageX - BLEED + WIDTH, pageY + HEIGHT)
-          .lineTo(pageX + WIDTH + 6, pageY + HEIGHT)
-          .stroke()
-        doc.moveTo(pageX + BLEED, pageY + BLEED + HEIGHT + 6)
-          .lineTo(pageX + BLEED, pageY + HEIGHT)
-          .lineTo(pageX - 6, pageY + HEIGHT)
-          .stroke()
+      // Draw cutting marks
+      doc.moveTo(pageX + BLEED, pageY - 6)
+        .lineTo(pageX + BLEED, pageY + BLEED)
+        .lineTo(pageX - 6, pageY + BLEED)
+        .stroke(BLACK)
+      doc.moveTo(pageX - BLEED + WIDTH, pageY - 6)
+        .lineTo(pageX - BLEED + WIDTH, pageY + BLEED)
+        .lineTo(pageX + WIDTH + 6, pageY + BLEED)
+        .stroke()
+      doc.moveTo(pageX - BLEED + WIDTH, pageY + BLEED + HEIGHT + 6)
+        .lineTo(pageX - BLEED + WIDTH, pageY + HEIGHT)
+        .lineTo(pageX + WIDTH + 6, pageY + HEIGHT)
+        .stroke()
+      doc.moveTo(pageX + BLEED, pageY + BLEED + HEIGHT + 6)
+        .lineTo(pageX + BLEED, pageY + HEIGHT)
+        .lineTo(pageX - 6, pageY + HEIGHT)
+        .stroke()
 
-        doc.rect(pageX + BLEED, pageY + BLEED, WIDTH - 2 * BLEED, HEIGHT - 2 * BLEED + 3)
-          .lineWidth(0.25)
-          .stroke(BLACK)
+      doc.rect(pageX + BLEED, pageY + BLEED, WIDTH - 2 * BLEED, HEIGHT - 2 * BLEED + 3)
+        .lineWidth(0.25)
+        .stroke(BLACK)
 
-        i++
-        if (i % 9 === 0) {
-          doc.addPage()
-          drawBacks(doc)
-          doc.addPage()
-        }
+      i++
+      if (i % 9 === 0) {
+        doc.addPage()
+        drawBacks(doc)
+        doc.addPage()
+      }
 
-        resolve()
-      }).catch(reject)
+      resolve()
     })
   }
 }
