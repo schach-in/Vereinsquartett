@@ -41,5 +41,4 @@ jspm_packages
 dist/
 .cache/
 
-src/data/vereine.csv
 src/data/images/*
