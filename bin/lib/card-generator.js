@@ -46,7 +46,7 @@ function drawBack (doc, pageX, pageY) {
       .lineTo($line.attr('x2'), $line.attr('y2'))
       .strokeOpacity(0.5).lineWidth(0.5).stroke(WHITE)
   })
-  doc.fontSize(8).fill(WHITE).text('v0.1 - 06.12.2017', MARGIN + 4, MARGIN + 6.5)
+  doc.fontSize(8).fill(WHITE).text('v0.1 - 09.12.2017', MARGIN + 4, MARGIN + 6.5)
   doc.restore()
 }
 

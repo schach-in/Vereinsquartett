@@ -12,8 +12,8 @@ const SRC_DIR = path.resolve(__dirname, '../src')
 const DATA_DIR = path.resolve(SRC_DIR, 'data')
 const DEST_DIR = path.resolve(__dirname, '../dist')
 
-const ALPHABET = 'ABCDEFGHIJKMNOPQRSTUVWXYZ'
-const ID_PARTS = 6
+const ALPHABET = 'ABCDEFGHJKMNOPQRSTUVWXYZabcdefghjklmnopqrstuvwxyz'
+const ID_PARTS = 4
 
 try {
   fs.mkdirSync(DEST_DIR)
