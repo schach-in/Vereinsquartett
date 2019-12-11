@@ -3,8 +3,8 @@ const Pageres = require('pageres')
 
 const IMG_DIR = path.resolve(__dirname, '../src/data/images')
 
-let zps = process.argv[2]
-let url = 'http://schach.in/zps/' + zps
+const zps = process.argv[2]
+const url = 'http://schach.in/zps/' + zps
 
 new Pageres({
   delay: 1.5,

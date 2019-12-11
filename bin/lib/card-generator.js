@@ -14,16 +14,16 @@ const HEIGHT = 255 + 2 * BLEED
 const MARGIN = 10 + 2 * BLEED
 const LINE_HEIGHT = 14
 
-const VERKEHRSROT = [ 0, 100, 100, 10 ]
-const LICHTGRAU = [ 0, 0, 0, 20 ]
-const WHITE = [ 0, 0, 0, 0 ]
-const BLACK = [ 0, 0, 0, 100 ]
+const VERKEHRSROT = [0, 100, 100, 10]
+const LICHTGRAU = [0, 0, 0, 20]
+const WHITE = [0, 0, 0, 0]
+const BLACK = [0, 0, 0, 100]
 
-let $ = cheerio.load(fs.readFileSync(path.resolve(__dirname, '../../src/backside.svg')))
+const $ = cheerio.load(fs.readFileSync(path.resolve(__dirname, '../../src/backside.svg')))
 function drawBacks (doc) {
   for (let i = 0; i < 9; i++) {
-    let pageX = 595 - (1 + (i / 3 | 0) % 3) * (WIDTH + MARGIN)
-    let pageY = MARGIN + (i % 3) * (HEIGHT + MARGIN)
+    const pageX = 595 - (1 + (i / 3 | 0) % 3) * (WIDTH + MARGIN)
+    const pageY = MARGIN + (i % 3) * (HEIGHT + MARGIN)
     drawBack(doc, pageX, pageY)
   }
 }
@@ -31,7 +31,7 @@ function drawBack (doc, pageX, pageY) {
   doc.save().translate(pageX, pageY)
   let first = true
   $('path').each((i, path) => {
-    let d = $(path).attr('d')
+    const d = $(path).attr('d')
     doc.path(d)
     if (first) {
       first = false
@@ -41,7 +41,7 @@ function drawBack (doc, pageX, pageY) {
     }
   })
   $('line').each((i, line) => {
-    let $line = $(line)
+    const $line = $(line)
     doc.moveTo($line.attr('x1'), $line.attr('y1'))
       .lineTo($line.attr('x2'), $line.attr('y2'))
       .strokeOpacity(0.5).lineWidth(0.5).stroke(WHITE)
@@ -51,7 +51,7 @@ function drawBack (doc, pageX, pageY) {
 }
 
 function makePDF (card) {
-  let doc = new PDFDocument({ size: 'a4', margin: 15 })
+  const doc = new PDFDocument({ size: 'a4', margin: 15 })
   let i = 0
   return {
     doc: doc,
@@ -63,8 +63,8 @@ function makePDF (card) {
       return doc.end()
     },
     add: (card) => new Promise((resolve, reject) => {
-      let pageX = MARGIN + ((i / 3 | 0) % 3) * (WIDTH + MARGIN)
-      let pageY = MARGIN + (i % 3) * (HEIGHT + MARGIN)
+      const pageX = MARGIN + ((i / 3 | 0) % 3) * (WIDTH + MARGIN)
+      const pageY = MARGIN + (i % 3) * (HEIGHT + MARGIN)
 
       let y = 0
       doc.rect(pageX + 0, pageY + 0, WIDTH, HEIGHT / 2.5)
@@ -74,7 +74,7 @@ function makePDF (card) {
       doc.font(path.resolve(__dirname, '../../src/fonts/FiraSans-Light.ttf'), 'Light')
       doc.font(path.resolve(__dirname, '../../src/fonts/FiraSans-Book.ttf'), 'Regular')
 
-      let filename = path.resolve(IMG_DIR, card.zps + '.png')
+      const filename = path.resolve(IMG_DIR, card.zps + '.png')
       if (fs.existsSync(filename)) {
         doc.save()
           .clip()

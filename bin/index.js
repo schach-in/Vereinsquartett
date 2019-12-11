@@ -32,7 +32,7 @@ function loadCSV (filename, callback) {
     .pipe(concat(callback.bind(null, null)))
 }
 
-let categories = [
+const categories = [
   {
     name: 'Gründungsjahr',
     find: verein => parseInt(verein.gruendung.slice(0, 4)) || '—',
@@ -70,18 +70,18 @@ loadCSV(filename, function (err, vereine) {
 
   let i = 0
   async.eachLimit(vereine, 1, (verein, cardDone) => {
-    let cardId = ALPHABET[i / ID_PARTS | 0] + (i % ID_PARTS + 1)
+    const cardId = ALPHABET[i / ID_PARTS | 0] + (i % ID_PARTS + 1)
 
-    let website = verein.website
+    const website = verein.website
       .replace(/^https?:\/\//, '')
       .replace(/\/$/, '')
 
-    let name = verein.name
+    const name = verein.name
       .replace(/ e\. ?V\.?/, '')
       .replace(/ eV.?/, '')
       .replace('  ', ' ')
 
-    let card = {
+    const card = {
       name: name,
       id: cardId,
       zps: verein.zps,
@@ -94,10 +94,10 @@ loadCSV(filename, function (err, vereine) {
     }
 
     pdf.add(card).then(cardDone)
-    .catch((err) => {
-      console.error(err)
-      cardDone(err)
-    })
+      .catch((err) => {
+        console.error(err)
+        cardDone(err)
+      })
     i++
   }, function () {
     pdf.end()
