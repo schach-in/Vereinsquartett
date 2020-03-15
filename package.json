@@ -1,6 +1,6 @@
 {
   "name": "schachquartett",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Automatically generate card game with chess clubs in Germany",
   "main": "index.js",
   "repository": {
