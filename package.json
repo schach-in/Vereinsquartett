@@ -22,7 +22,7 @@
     "csv-parse": "^4.8.2",
     "image-size": "^0.4.0",
     "js-yaml": "^3.4.6",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.19",
     "pageres": "^5.2.0",
     "pdfkit": "^0.7.1",
     "request": "^2.67.0",
