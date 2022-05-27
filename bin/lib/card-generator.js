@@ -54,7 +54,7 @@ function makePDF (card) {
   const doc = new PDFDocument({ size: 'a4', margin: 15 })
   let i = 0
   return {
-    doc: doc,
+    doc,
     end: () => {
       if ((i + 1) % 9 !== 0) {
         doc.addPage()

@@ -22,7 +22,7 @@ try {
 }
 
 function loadCSV (filename, callback) {
-  var stream = fs.createReadStream(filename)
+  const stream = fs.createReadStream(filename)
   stream.on('error', function (error) {
     callback(error)
   })
@@ -82,11 +82,11 @@ loadCSV(filename, function (err, vereine) {
       .replace('  ', ' ')
 
     const card = {
-      name: name,
+      name,
       id: cardId,
       zps: verein.zps,
       verband: '(tbd)',
-      website: website,
+      website,
       values: categories.map(category => ({
         name: category.name,
         value: category.find(verein)
