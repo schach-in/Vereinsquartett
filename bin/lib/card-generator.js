@@ -71,8 +71,8 @@ function makePDF (card) {
       y = HEIGHT / 2.2
 
       // Declare fonts
-      doc.font(path.resolve(__dirname, '../../src/fonts/FiraSans-Light.ttf'), 'Light')
-      doc.font(path.resolve(__dirname, '../../src/fonts/FiraSans-Book.ttf'), 'Regular')
+      doc.registerFont('Light', path.resolve(__dirname, '../../src/fonts/FiraSans-Light.ttf'))
+      doc.registerFont('Regular', path.resolve(__dirname, '../../src/fonts/FiraSans-Book.ttf'))
 
       const filename = path.resolve(IMG_DIR, card.zps + '.png')
       if (fs.existsSync(filename)) {
