@@ -3,7 +3,7 @@
 const async = require('async')
 const path = require('path')
 const fs = require('fs')
-const csv = require('csv-parse')
+const { parse } = require('csv-parse')
 const concat = require('concat-stream')
 
 const pdf = require('./lib/card-generator')()
@@ -26,7 +26,7 @@ function loadCSV (filename, callback) {
   stream.on('error', function (error) {
     callback(error)
   })
-  stream.pipe(csv({
+  stream.pipe(parse({
     columns: true
   }))
     .pipe(concat(callback.bind(null, null)))
